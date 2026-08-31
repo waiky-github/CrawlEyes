@@ -1,8 +1,16 @@
 # CrawlEyes — Web Scraping & Search Toolkit for AI Agents
 
+[![GitHub stars](https://img.shields.io/github/stars/waiky-github/CrawlEyes)](https://github.com/waiky-github/CrawlEyes/stargazers)
+[![GitHub license](https://img.shields.io/github/license/waiky-github/CrawlEyes)](https://github.com/waiky-github/CrawlEyes/blob/main/LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
+[![MCP](https://img.shields.io/badge/MCP-server-7B68EE)](https://modelcontextprotocol.io)
+[![MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+
 **CrawlEyes** gives AI agents reliable **full-text extraction** (`web_extract`) and **robust search** (`web_search`) backends — the "eyes" that let agents see and read the web. Built and tested against [Hermes Agent](https://hermes-agent.nousresearch.com/docs).
 
 Also ships as a **standard MCP server**, so any MCP client (Claude Desktop, Cursor, other agents) can reuse the same search + extraction capabilities.
+
+![CrawlEyes demo](assets/demo.png)
 
 ## Features
 
