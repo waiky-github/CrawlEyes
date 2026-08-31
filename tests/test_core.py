@@ -98,6 +98,7 @@ def test_deep_research_aggregate_structure():
     import os
     os.environ.pop("CRAWLEYES_LLM_API_KEY", None)  # force aggregate mode
     import asyncio
+
     from crawleyes.deep_research import deep_research
 
     r = asyncio.run(deep_research("test topic", num_questions=1, per_q=1))
@@ -117,7 +118,7 @@ if __name__ == "__main__":
         try:
             fn()
             print(f"  ✓ {fn.__name__}")
-        except Exception:
+        except Exception:  # noqa: BLE001 -- 测试 harness 需要捕获所有异常
             failed += 1
             print(f"  ✗ {fn.__name__}")
             traceback.print_exc()

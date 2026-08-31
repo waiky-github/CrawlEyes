@@ -24,7 +24,7 @@ import asyncio
 import json
 import os
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .crawl_search_standalone import CrawlSearch
 from .rag import markdown
@@ -58,13 +58,13 @@ Rules:
 @dataclass
 class ResearchResult:
     topic: str
-    sub_questions: List[str] = field(default_factory=list)
-    sources: List[Dict[str, Any]] = field(default_factory=list)
+    sub_questions: list[str] = field(default_factory=list)
+    sources: list[dict[str, Any]] = field(default_factory=list)
     report: str = ""
     mode: str = "aggregate"  # "aggregate" | "llm"
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "topic": self.topic,
             "mode": self.mode,
@@ -102,7 +102,7 @@ class _LLM:
             return data["choices"][0]["message"]["content"]
 
 
-def _get_llm() -> Optional[_LLM]:
+def _get_llm() -> _LLM | None:
     base = os.environ.get("CRAWLEYES_LLM_BASE_URL", "https://api.openai.com/v1")
     key = os.environ.get("CRAWLEYES_LLM_API_KEY", "")
     model = os.environ.get("CRAWLEYES_LLM_MODEL", "gpt-4o-mini")
@@ -111,7 +111,7 @@ def _get_llm() -> Optional[_LLM]:
     return _LLM(base, key, model)
 
 
-async def _plan(llm: _LLM, topic: str, num: int = 4) -> List[str]:
+async def _plan(llm: _LLM, topic: str, num: int = 4) -> list[str]:
     try:
         out = await llm.chat(
             system="You return only valid JSON.",
@@ -121,25 +121,24 @@ async def _plan(llm: _LLM, topic: str, num: int = 4) -> List[str]:
         out = out.strip()
         if out.startswith("```"):
             out = out.split("```")[1]
-            if out.startswith("json"):
-                out = out[4:]
+            out = out.removeprefix("json")
         data = json.loads(out)
         if isinstance(data, list):
             return [str(x) for x in data][:num]
         if isinstance(data, dict) and "questions" in data:
             return [str(x) for x in data["questions"]][:num]
-    except Exception as e:  # noqa: BLE001
+    except Exception:  # noqa: BLE001
         return []
     return []
 
 
-async def _gather_evidence(sub_questions: List[str], per_q: int = 3) -> List[Dict[str, Any]]:
+async def _gather_evidence(sub_questions: list[str], per_q: int = 3) -> list[dict[str, Any]]:
     """Search each sub-question, then extract the top results."""
-    sources: List[Dict[str, Any]] = []
+    sources: list[dict[str, Any]] = []
     seen: set = set()
 
     # Phase 1: search all sub-questions
-    search_batches: List[Dict[str, Any]] = []
+    search_batches: list[dict[str, Any]] = []
     for q in sub_questions:
         r = _search.search(q, limit=per_q * 2)
         if not r.get("success"):
@@ -173,7 +172,7 @@ async def _gather_evidence(sub_questions: List[str], per_q: int = 3) -> List[Dic
     return sources
 
 
-def _build_evidence_block(sources: List[Dict[str, Any]]) -> str:
+def _build_evidence_block(sources: list[dict[str, Any]]) -> str:
     lines = []
     for i, s in enumerate(sources, 1):
         lines.append(f"[source {i}] {s['title']}\nURL: {s['url']}")
@@ -233,9 +232,9 @@ async def deep_research(topic: str, num_questions: int = 4, per_q: int = 3) -> R
     return result
 
 
-def deep_research_sync(topic: str, **kwargs) -> Dict[str, Any]:
+def deep_research_sync(topic: str, **kwargs) -> dict[str, Any]:
     """Synchronous wrapper around :func:`deep_research`."""
     return asyncio.run(deep_research(topic, **kwargs)).to_dict()
 
 
-__all__ = ["deep_research", "deep_research_sync", "ResearchResult"]
+__all__ = ["ResearchResult", "deep_research", "deep_research_sync"]

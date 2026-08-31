@@ -17,7 +17,7 @@ import os
 import sqlite3
 import threading
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class _Cache:
         except Exception as e:  # noqa: BLE001
             logger.debug("cache init failed: %s", e)
 
-    def get(self, query: str) -> Optional[List[Dict[str, Any]]]:
+    def get(self, query: str) -> list[dict[str, Any]] | None:
         try:
             row = self._conn().execute(
                 "SELECT results, created_at FROM search_cache WHERE query=?",
@@ -72,13 +72,13 @@ class _Cache:
         except Exception:  # noqa: BLE001
             return None
 
-    def set(self, query: str, results: List[Dict[str, Any]]):
+    def set(self, query: str, results: list[dict[str, Any]]):
         try:
             self._conn().execute(
                 "INSERT OR REPLACE INTO search_cache VALUES (?,?,?)",
                 (query, json.dumps(results, ensure_ascii=False), time.time()))
             self._conn().commit()
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001, S110  -- 缓存写失败静默，不影响搜索主流程
             pass
 
 
@@ -90,7 +90,7 @@ class CrawlSearch:
         self._rerank = rerank
         self._reranker = None
 
-    def search(self, query: str, limit: int = 5, rerank: bool | None = None) -> Dict[str, Any]:
+    def search(self, query: str, limit: int = 5, rerank: bool | None = None) -> dict[str, Any]:
         do_rerank = self._rerank if rerank is None else rerank
         cached = self._cache.get(query)
         if cached is not None:
@@ -121,12 +121,12 @@ class CrawlSearch:
             self._reranker = TextEmbedding("BAAI/bge-small-zh-v1.5")
         return self._reranker
 
-    def _rerank_results(self, query: str, web: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _rerank_results(self, query: str, web: list[dict[str, Any]]) -> list[dict[str, Any]]:
         try:
             import numpy as np
             model = self._get_reranker()
             # query 嵌入
-            q_emb = list(model.embed([query]))[0]
+            q_emb = next(iter(model.embed([query])))
             # 每个结果用 title+description 嵌入
             texts = [f"{r.get('title','')} {r.get('description','')}" for r in web]
             embs = list(model.embed(texts))
@@ -149,7 +149,7 @@ class CrawlSearch:
             logger.warning("rerank failed (fallback to original order): %s", e)
             return web
 
-    def _searxng(self, query: str, limit: int) -> Dict[str, Any]:
+    def _searxng(self, query: str, limit: int) -> dict[str, Any]:
         import httpx
         base_url = os.getenv("SEARXNG_URL", "").strip().rstrip("/")
         if not base_url:
@@ -173,7 +173,7 @@ class CrawlSearch:
         ]
         return {"success": True, "data": {"web": web}}
 
-    def _tavily(self, query: str, limit: int) -> Dict[str, Any]:
+    def _tavily(self, query: str, limit: int) -> dict[str, Any]:
         import httpx
         try:
             resp = httpx.post(f"{TAVILY_API}/search",

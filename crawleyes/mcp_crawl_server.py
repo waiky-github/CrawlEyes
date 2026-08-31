@@ -18,7 +18,10 @@ SearXNG-Tavily MCP Server
   #       args: ["/home/agentuser/crawl/scripts/mcp_crawl_server.py"]
   #       env: { SEARXNG_URL: "https://your-searxng" }
 """
-import asyncio, os, sys, json, re
+import json
+import os
+import re
+import sys
 
 # 保证能 import 插件和脚本
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

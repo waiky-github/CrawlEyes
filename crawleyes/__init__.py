@@ -15,10 +15,10 @@ from .rag import markdown, markdown_sync, search_markdown
 
 __all__ = [
     "CrawlSearch",
+    "__version__",
     "deep_research",
     "deep_research_sync",
     "markdown",
     "markdown_sync",
     "search_markdown",
-    "__version__",
 ]

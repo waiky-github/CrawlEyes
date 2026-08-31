@@ -29,7 +29,10 @@ v1.1 新增（2026-08-31）:
     .venv/bin/python scripts/crawl4ai_cli.py https://example.com --noise-filter
     .venv/bin/python scripts/crawl4ai_cli.py https://news.example --bm25 "AI 芯片" --retry 3
 """
-import asyncio, sys, argparse, json, time, logging
+import argparse
+import asyncio
+import json
+import logging
 
 # 默认安静, 只在重试/错误时打日志
 logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(message)s")
@@ -39,7 +42,7 @@ log = logging.getLogger("crawl4ai_cli")
 async def scrape(url, timeout=30, max_words=0, text_only=False, js_code=None,
                  noise_filter=False, bm25_keywords=None, retry=2, session=None):
     from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig
-    from crawl4ai.content_filter_strategy import PruningContentFilter, BM25ContentFilter
+    from crawl4ai.content_filter_strategy import BM25ContentFilter, PruningContentFilter
     from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
 
     browser_cfg = BrowserConfig(

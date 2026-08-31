@@ -9,9 +9,7 @@ LLM-ready Markdown — the building blocks for RAG corpora and deep-research age
 from __future__ import annotations
 
 import asyncio
-import json
-import re
-from typing import Any, Dict, Optional
+from typing import Any
 
 from .crawl_search_standalone import CrawlSearch
 from .mcp_crawl_server import sanitize_markdown
@@ -27,7 +25,7 @@ async def markdown(
     retry: int = 2,
     timeout: int = 30,
     text_only: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Fetch a URL and return clean, sanitized Markdown (RAG-ready).
 
     Applies Crawl4AI extraction + content denoising + prompt-injection stripping.
@@ -53,7 +51,7 @@ async def markdown(
     return result
 
 
-def search_markdown(query: str, limit: int = 5) -> Dict[str, Any]:
+def search_markdown(query: str, limit: int = 5) -> dict[str, Any]:
     """Search (SearXNG → Tavily keyless) and return top results as Markdown.
 
     Returns ``{"success": True, "source", "markdown"}`` where markdown is a compact
@@ -79,9 +77,9 @@ def search_markdown(query: str, limit: int = 5) -> Dict[str, Any]:
     }
 
 
-def markdown_sync(url: str, **kwargs) -> Dict[str, Any]:
+def markdown_sync(url: str, **kwargs) -> dict[str, Any]:
     """Synchronous wrapper around :func:`markdown` for non-async callers."""
     return asyncio.run(markdown(url, **kwargs))
 
 
-__all__ = ["markdown", "markdown_sync", "search_markdown", "sanitize_markdown"]
+__all__ = ["markdown", "markdown_sync", "sanitize_markdown", "search_markdown"]
