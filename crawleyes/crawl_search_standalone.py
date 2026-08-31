@@ -108,7 +108,7 @@ class CrawlSearch:
                 web = self._rerank_results(query, web)
             self._cache.set(query, web)
             result["data"]["web"] = web
-        result["data"]["source_tag"] = source
+            result["data"]["source_tag"] = source
         return result
 
     # ---- P2: 本地嵌入语义重排 (fastembed + bge-small-zh, 不依赖 torch) ----

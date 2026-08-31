@@ -18,7 +18,7 @@ SearXNG-Tavily MCP Server
   #       args: ["/home/agentuser/crawl/scripts/mcp_crawl_server.py"]
   #       env: { SEARXNG_URL: "https://your-searxng" }
 """
-import asyncio, os, sys, json
+import asyncio, os, sys, json, re
 
 # 保证能 import 插件和脚本
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -32,6 +32,64 @@ from .crawl_search_standalone import CrawlSearch
 
 # 默认开启语义重排 (P2: fastembed + bge-small-zh)
 _search = CrawlSearch(rerank=True)
+
+
+# ---- Prompt-injection defense (inspired by Scrapling's approach) ----
+_INJECTION_PATTERNS = [
+    r"ignore\s+(all\s+)?(previous|prior|above|earlier)\s+(instructions?|prompts?|messages?)",
+    r"disregard\s+(all\s+)?(previous|prior|above)\s+",
+    r"you\s+are\s+now\s+",
+    r"system\s*:\s*(you\s+are|ignore)",
+    r"<\|?im_start\|?>",
+    r"</?(system|assistant|user|human)>",
+    r"do\s+not\s+reveal\s+",
+    r"new\s+instructions?:",
+]
+
+
+def sanitize_markdown(md: str, max_words: int = 8000) -> str:
+    """Strip invisible prompt-injection text and mark suspicious instructions.
+
+    Strategy (similar to Scrapling's AI-facing sanitization):
+    1. Remove zero-width / invisible Unicode characters (common injection carriers)
+    2. Drop lines that try to hijack the model (case-insensitive, English-centric)
+    3. Collapse excessive blank lines
+    4. Word-count guardrail against prompt bombs
+    """
+    if not md:
+        return md
+
+    # 1. Remove invisible / zero-width characters (ZWJ, ZWNJ, BOM, word-joiner, etc.)
+    md = re.sub(
+        r"[\u200b\u200c\u200d\u200e\u200f\u2060\u2061\u2062\u2063\ufeff\u00ad\u061c]",
+        "",
+        md,
+    )
+
+    # 2. Drop lines that look like prompt-hijack attempts
+    out_lines = []
+    for line in md.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            out_lines.append(line)
+            continue
+        if re.search(_INJECTION_PATTERNS[0], stripped, re.IGNORECASE) or re.search(
+            _INJECTION_PATTERNS[1], stripped, re.IGNORECASE
+        ):
+            continue  # drop the line entirely
+        out_lines.append(line)
+
+    md = "\n".join(out_lines)
+
+    # 3. Collapse 3+ consecutive blank lines to one
+    md = re.sub(r"\n{3,}", "\n\n", md)
+
+    # 4. Word-count guardrail
+    words = re.findall(r"\S+", md)
+    if len(words) > max_words:
+        md = " ".join(words[:max_words]) + " ... [truncated]"
+
+    return md
 
 
 @mcp.tool()
@@ -49,6 +107,7 @@ def search(query: str, limit: int = 5) -> str:
 @mcp.tool()
 async def extract(url: str, max_words: int = 8000) -> str:
     """抓取网页正文为 Markdown。自动去噪（过滤导航/广告），失败自动重试。
+    返回前会剥离隐藏文字 + 标记可疑注入，防止 prompt-injection 劫持 Agent。
     Returns JSON with title/markdown/length."""
     from .crawl4ai_cli import scrape
     result = await scrape(
@@ -56,11 +115,12 @@ async def extract(url: str, max_words: int = 8000) -> str:
     )
     if not result.get("success"):
         return json.dumps({"error": result.get("error", "unknown")}, ensure_ascii=False)
+    markdown = sanitize_markdown(result.get("markdown", ""), max_words=max_words)
     return json.dumps({
         "title": result.get("title"),
         "url": result.get("url"),
-        "length": result.get("length"),
-        "markdown": result.get("markdown", ""),
+        "length": len(markdown.split()),
+        "markdown": markdown,
     }, ensure_ascii=False)
 
 

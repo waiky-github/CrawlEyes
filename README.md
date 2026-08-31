@@ -43,7 +43,9 @@ Most agent toolkits cover *one* slice of the pipeline. CrawlEyes is the rare **a
 | **Search (fallback)** | Tavily keyless API | Zero-config, no-key fallback when SearXNG is down/empty |
 | **Search orchestration** | `plugins/searxng-tavily/` | Hermes plugin provider: SearXNG first → auto-fallback to Tavily keyless; three-state circuit breaker (3 fails → 60s cooldown → half-open) + shared SQLite cache (TTL 3600s) |
 | **Semantic reranking** (P2) | `scripts/crawl_search_standalone.py` | Local embedding rerank of search results with `fastembed` + `BAAI/bge-small-zh-v1.5` (512-dim, **no torch dependency**, ~50MB, cached) — puts relevant results first. Measured: crawler-relevant items 0.817/0.732 float to top, irrelevant 0.302/0.139 sink |
-| **MCP server** (P5) | `scripts/mcp_crawl_server.py` | Exposes `search` + `extract` as standard MCP tools (stdio transport). Works in *any* MCP client, no Hermes dependency |
+| **MCP server** (P5) | `scripts/mcp_crawl_server.py` | Exposes `search` + `extract` as standard MCP tools (stdio transport). Works in *any* MCP client, no Hermes dependency. Extracted content is sanitized against prompt-injection (strips invisible chars + prompt-hijack lines) |
+| **RAG-ready interfaces** | `crawleyes/rag.py` | One-liners `markdown(url)` / `search_markdown(query)` → clean, sanitized, LLM-ready Markdown for RAG corpora |
+| **Deep research** | `crawleyes/deep_research.py` | `deep_research(topic)` → decomposes topic into sub-questions → searches → extracts → synthesizes a **cited Markdown report**. Optional LLM (any OpenAI-compatible endpoint); degrades to evidence-aggregate mode without one |
 | **Verification** | `scripts/` | Clean subprocess scripts to verify each backend end-to-end per Hermes profile |
 
 ## Project layout

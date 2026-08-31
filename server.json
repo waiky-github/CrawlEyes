@@ -1,11 +1,19 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.waiky-github/CrawlEyes",
+  "title": "CrawlEyes MCP Server",
   "description": "Web scraping & search for AI agents: extract, SearXNG/Tavily search, rerank. No API key needed.",
+  "websiteUrl": "https://github.com/waiky-github/CrawlEyes",
   "repository": {
     "url": "https://github.com/waiky-github/CrawlEyes",
     "source": "github"
   },
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/waiky-github/CrawlEyes/main/assets/icon.png",
+      "mimeType": "image/png"
+    }
+  ],
   "version": "0.1.0",
   "packages": [
     {
