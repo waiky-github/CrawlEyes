@@ -16,6 +16,20 @@ Also ships as a **standard MCP server**, so any MCP client (Claude Desktop, Curs
 
 ![CrawlEyes demo](assets/demo.png)
 
+## Why CrawlEyes?
+
+Most agent toolkits cover *one* slice of the pipeline. CrawlEyes is the rare **all-in-one** that you can actually run behind the Great Firewall without external accounts.
+
+| | Typical agent toolkit | **CrawlEyes** |
+|:--|:--|:--|
+| 🔍 **Search** | API key required, often blocked in CN | ✅ SearXNG (self-hosted) + **Tavily keyless fallback** — zero config, zero key |
+| 📄 **Extraction** | Separate scraper, or Firecrawl SaaS | ✅ Built-in Crawl4AI full-text extract, ~89% noise removal |
+| 🧠 **Semantic rerank** | Rarely included | ✅ Local fastembed rerank — no torch, ~50MB model |
+| 🔌 **MCP server** | Often missing | ✅ Standard MCP tools (`search` + `extract`), any client |
+| 🌐 **China-friendly** | Mostly English/GFW-blocked | ✅ Tested on a real mainland China server (baidu + yandex) |
+
+> **Zero API keys. Zero external accounts. One command.** CrawlEyes is the only toolkit in this space that combines search + extraction + semantic reranking + MCP in a single, China-friendly, self-hosted package.
+
 ## Features
 
 | Capability | Where | Why it matters |
