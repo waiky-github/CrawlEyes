@@ -1,5 +1,9 @@
 # CrawlEyes — Web Scraping & Search Toolkit for AI Agents
 
+<!-- MCP Registry metadata: associates this PyPI package with the MCP registry entry.
+     Name must match the mcpName in the registry listing. -->
+<!-- mcp-name: io.github.waiky-github/CrawlEyes -->
+
 [![GitHub stars](https://img.shields.io/github/stars/waiky-github/CrawlEyes)](https://github.com/waiky-github/CrawlEyes/stargazers)
 [![GitHub license](https://img.shields.io/github/license/waiky-github/CrawlEyes)](https://github.com/waiky-github/CrawlEyes/blob/main/LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)

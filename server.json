@@ -1,0 +1,36 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.waiky-github/CrawlEyes",
+  "description": "Web scraping & search for AI agents: extract, SearXNG/Tavily search, rerank. No API key needed.",
+  "repository": {
+    "url": "https://github.com/waiky-github/CrawlEyes",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "crawleyes",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "description": "Optional. Base URL of a SearXNG instance (e.g. http://localhost:8080). If unset, falls back to Tavily keyless.",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false,
+          "name": "SEARXNG_URL"
+        },
+        {
+          "description": "Optional. Tavily API key for higher-rate search fallback. If unset, uses Tavily keyless (rate-limited).",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true,
+          "name": "TAVILY_API_KEY"
+        }
+      ]
+    }
+  ]
+}
