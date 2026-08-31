@@ -12,7 +12,7 @@ import asyncio
 from typing import Any
 
 from .crawl_search_standalone import CrawlSearch
-from .mcp_crawl_server import sanitize_markdown
+from .sanitize import sanitize_markdown
 
 # Default instance (semantic rerank on, like the MCP server)
 _search = CrawlSearch(rerank=True)
