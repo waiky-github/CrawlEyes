@@ -1,0 +1,7 @@
+name: web-searxng-tavily
+version: 1.0.0
+description: "SearXNG search with automatic Tavily keyless fallback — zero cost, no API key"
+author: yk
+kind: backend
+provides_web_providers:
+  - searxng-tavily
