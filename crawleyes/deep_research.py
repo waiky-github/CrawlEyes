@@ -203,6 +203,13 @@ async def deep_research(topic: str, num_questions: int = 4, per_q: int = 3) -> R
     result.sources = await _gather_evidence(result.sub_questions, per_q)
     if not result.sources:
         result.errors.append("No sources found for any sub-question.")
+        # Still produce a well-formed report so callers/tests get structured output
+        result.mode = "aggregate"
+        result.report = (
+            f"# Research: {topic}\n\n"
+            "_No sources could be retrieved (search unavailable). "
+            "Check SEARXNG_URL / network / httpx availability._"
+        )
         return result
 
     # 4. Synthesize
