@@ -84,8 +84,10 @@ class _LLM:
         self.model = model
 
     async def chat(self, system: str, user: str, temperature: float = 0.2) -> str:
-        import httpx
-
+        try:
+            import httpx
+        except ImportError:
+            return ""  # LLM 不可用 → 上层降级为 aggregate 模式
         headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
         payload = {
             "model": self.model,

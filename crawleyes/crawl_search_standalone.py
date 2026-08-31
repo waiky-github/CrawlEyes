@@ -150,7 +150,12 @@ class CrawlSearch:
             return web
 
     def _searxng(self, query: str, limit: int) -> dict[str, Any]:
-        import httpx
+        try:
+            import httpx
+        except ImportError:
+            # httpx is a declared dependency, but in --no-deps test envs it may be
+            # absent; degrade gracefully instead of crashing the caller.
+            return {"success": False, "error": "httpx not installed"}
         base_url = os.getenv("SEARXNG_URL", "").strip().rstrip("/")
         if not base_url:
             return {"success": False, "error": "SEARXNG_URL not set"}
@@ -174,12 +179,15 @@ class CrawlSearch:
         return {"success": True, "data": {"web": web}}
 
     def _tavily(self, query: str, limit: int) -> dict[str, Any]:
-        import httpx
         try:
+            import httpx
+
             resp = httpx.post(f"{TAVILY_API}/search",
                               json={"query": query, "max_results": min(limit, 20)},
                               headers=KEYLESS_HEADER, timeout=TAVILY_TIMEOUT)
             resp.raise_for_status()
+        except ImportError:
+            return {"success": False, "error": "httpx not installed"}
         except Exception as e:  # noqa: BLE001
             return {"success": False, "error": str(e)}
         try:
