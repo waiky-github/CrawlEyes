@@ -124,6 +124,25 @@ async def extract(url: str, max_words: int = 8000) -> str:
     }, ensure_ascii=False)
 
 
+@mcp.tool()
+async def deep_research(topic: str, num_questions: int = 4, per_q: int = 3) -> str:
+    """深度调研：把主题拆成子问题→搜索→抓取→合成带引用的报告。
+    Uses SearXNG → Tavily keyless (no API key). Optional LLM synthesis via
+    CRAWLEYES_LLM_* env vars; without them returns an evidence-aggregate report.
+    Returns JSON with report (Markdown) + sources."""
+    from .deep_research import deep_research as run_research
+    result = await run_research(topic, num_questions=num_questions, per_q=per_q)
+    return json.dumps({
+        "topic": result.topic,
+        "mode": result.mode,
+        "sub_questions": result.sub_questions,
+        "source_count": len(result.sources),
+        "sources": [{"title": s["title"], "url": s["url"]} for s in result.sources],
+        "report": result.report,
+        "errors": result.errors,
+    }, ensure_ascii=False)
+
+
 def main():
     """Console entry point for the MCP server."""
     mcp.run()

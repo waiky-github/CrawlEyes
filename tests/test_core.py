@@ -51,18 +51,20 @@ def test_cache_roundtrip(tmp_path="."):
 
 
 def test_mcp_server_imports_and_tools():
-    """The MCP server module imports and registers exactly search + extract tools."""
+    """The MCP server module imports and registers search + extract + deep_research tools."""
     from crawleyes import mcp_crawl_server as m
 
     tm = getattr(m.mcp, "_tool_manager", None)
     if tm is not None and hasattr(tm, "list_tools"):
         names = sorted(t.name for t in tm.list_tools())
-        assert set(names) == {"search", "extract"}, names
-    # At minimum the two functions exist as decorated tools
+        assert set(names) == {"search", "extract", "deep_research"}, names
+    # At minimum the three functions exist as decorated tools
     assert hasattr(m, "search")
     assert hasattr(m, "extract")
+    assert hasattr(m, "deep_research")
     assert callable(m.search)
     assert callable(m.extract)
+    assert callable(m.deep_research)
 
 
 def test_sanitize_markdown_strips_injection():
