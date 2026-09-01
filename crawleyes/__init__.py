@@ -7,7 +7,7 @@ Provides:
 - Deep research: deep_research(topic) → cited Markdown report (SearXNG + LLM optional)
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 from .crawl_search_standalone import CrawlSearch
 from .deep_research import deep_research, deep_research_sync
