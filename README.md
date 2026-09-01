@@ -25,7 +25,7 @@ Most agent toolkits cover *one* slice of the pipeline. CrawlEyes is the rare **a
 | 🔍 **Search** | API key required, often blocked in CN | ✅ SearXNG (self-hosted) + **Tavily keyless fallback** — zero config, zero key |
 | 📄 **Extraction** | Separate scraper, or Firecrawl SaaS | ✅ Built-in Crawl4AI full-text extract, ~89% noise removal |
 | 🧠 **Semantic rerank** | Rarely included | ✅ Local fastembed rerank — no torch, ~50MB model |
-| 🔌 **MCP server** | Often missing | ✅ Standard MCP tools (`search` + `extract` + `deep_research`), any client |
+| 🔌 **MCP server** | Often missing | ✅ Standard MCP tools (`search` + `extract` + `deep_research` + `sitemap`), any client |
 | 🌐 **China-friendly** | Mostly English/GFW-blocked | ✅ Tested on a real mainland China server (baidu + yandex) |
 
 > **Zero API keys. Zero external accounts. One command.** CrawlEyes is the only toolkit in this space that combines search + extraction + semantic reranking + MCP in a single, China-friendly, self-hosted package.
@@ -43,7 +43,9 @@ Most agent toolkits cover *one* slice of the pipeline. CrawlEyes is the rare **a
 | **Search (fallback)** | Tavily keyless API | Zero-config, no-key fallback when SearXNG is down/empty |
 | **Search orchestration** | `plugins/searxng-tavily/` | Hermes plugin provider: SearXNG first → auto-fallback to Tavily keyless; three-state circuit breaker (3 fails → 60s cooldown → half-open) + shared SQLite cache (TTL 3600s) |
 | **Semantic reranking** (P2) | `scripts/crawl_search_standalone.py` | Local embedding rerank of search results with `fastembed` + `BAAI/bge-small-zh-v1.5` (512-dim, **no torch dependency**, ~50MB, cached) — puts relevant results first. Measured: crawler-relevant items 0.817/0.732 float to top, irrelevant 0.302/0.139 sink |
-| **MCP server** (P5) | `scripts/mcp_crawl_server.py` | Exposes `search` + `extract` + `deep_research` as standard MCP tools (stdio transport). Works in *any* MCP client, no Hermes dependency. Extracted content is sanitized against prompt-injection (strips invisible chars + prompt-hijack lines) |
+| **MCP server** (P5) | `scripts/mcp_crawl_server.py` | Exposes `search` + `extract` + `deep_research` + `sitemap` as standard MCP tools (stdio transport). Works in *any* MCP client, no Hermes dependency. Extracted content is sanitized against prompt-injection (strips invisible chars + prompt-hijack lines). **Unified rate limiting + exponential backoff** guard every tool (sliding window, per-tool cost) so concurrent agent calls can't hammer downstream services |
+| **Sitemap discovery** (P1) | `crawleyes/sitemap.py` | `sitemap(origin)` → parses `sitemap.xml` (plain / gzip / index-recursion) with `robots.txt` fallback, returns a deduped URL map. Zero-key way to discover a site's URL surface for whole-site fetch or deep-research seeding |
+| **Multi-format extract** (P0) | `extract(..., format=)` | `markdown` (default) / `fit` (denoised) / `raw` (unfiltered) / `markdown_with_citations` — pick the level of cleanup you need |
 | **RAG-ready interfaces** | `crawleyes/rag.py` | One-liners `markdown(url)` / `search_markdown(query)` → clean, sanitized, LLM-ready Markdown for RAG corpora |
 | **Deep research** | `crawleyes/deep_research.py` | `deep_research(topic)` → decomposes topic into sub-questions → searches → extracts → synthesizes a **cited Markdown report**. Optional LLM (any OpenAI-compatible endpoint); degrades to evidence-aggregate mode without one |
 | **Verification** | `scripts/` | Clean subprocess scripts to verify each backend end-to-end per Hermes profile |
@@ -57,7 +59,7 @@ scripts/
   crawl4ai_cli.py          Universal scraping CLI (URL → Markdown), with denoise/retry/session/BM25
   crawl_search_standalone.py  Standalone search (SearXNG → Tavily) + optional semantic rerank.
                              No Hermes dependency — usable anywhere, powers the MCP server.
-  mcp_crawl_server.py      Standard MCP server exposing search + extract + deep_research (stdio)
+  mcp_crawl_server.py      Standard MCP server exposing search + extract + deep_research + sitemap (stdio)
   single_env_check.py      Verify crawl4ai provider registered+available+extracts (one profile)
   verify_searxng_tavily.py Verify searxng-tavily provider: normal path + forced fallback
   agent_link_check.py      Verify full agent tool chain: web_search_tool dispatch + logs
@@ -84,6 +86,13 @@ PLAYWRIGHT_DOWNLOAD_HOST=https://registry.npmmirror.com/-/binary/playwright \
 .venv/bin/python scripts/crawl4ai_cli.py https://example.com -o out.md  # to file
 .venv/bin/python scripts/crawl4ai_cli.py URL --text --max-words 5000   # plain text, truncated
 
+# Multi-format extraction (markdown|fit|raw|markdown_with_citations)
+.venv/bin/python scripts/crawl4ai_cli.py URL --format raw              # unfiltered source markdown
+.venv/bin/python scripts/crawl4ai_cli.py URL --format markdown_with_citations  # + source URLs
+
+# Respect robots.txt (opt-in, default off)
+.venv/bin/python scripts/crawl4ai_cli.py URL --respect-robots
+
 # Denoise nav/ads + retry 3x + reuse session across scrapes
 .venv/bin/python scripts/crawl4ai_cli.py URL --noise-filter --retry 3 --session s1
 ```
@@ -109,7 +118,11 @@ print(r['data']['web'])"
 ```bash
 # Any MCP client can connect via stdio:
 .venv/bin/python scripts/mcp_crawl_server.py
-# Exposes tools: search(query, limit) + extract(url, max_words) + deep_research(topic)
+# Exposes tools:
+#   search(query, limit)                 - SearXNG → Tavily keyless, rerank, retry+rate-limit
+#   extract(url, max_words, format)      - markdown|fit|raw|markdown_with_citations
+#   deep_research(topic, num_questions)  - multi-round cited report
+#   sitemap(origin, max_urls)            - URL map from sitemap.xml / robots.txt
 ```
 
 For Hermes specifically, add to `config.yaml`:
