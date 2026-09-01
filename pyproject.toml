@@ -46,13 +46,13 @@ packages = ["crawleyes"]
 crawleyes = ["py.typed"]
 
 # ruff 显式规则配置：锁定 CI lint 行为，避免 noqa 注释被当作 unused(RUF100)
-# select 与 CI 实际启用规则一致；ignore 声明项目有意使用的模式
+# select 精确列规则（不用 RUF 整类，避免 RUF002 等中文标点误报）；ignore 声明有意模式
 [tool.ruff]
 line-length = 100
 target-version = "py310"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B", "RUF", "UP", "SIM", "EXE"]
+select = ["E", "F", "I", "B", "RUF100", "RUF012", "UP", "SIM", "EXE"]
 # BLE001: 宽异常捕获是项目的 fail-open 设计（限流/抓取/缓存容错），有意使用
 # S110/S310: urllib 抓取与测试中触发的 bandit 规则，用途明确合理
 ignore = ["BLE001", "S110", "S310", "A002", "N802"]
