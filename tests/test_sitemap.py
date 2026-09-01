@@ -8,6 +8,7 @@ import os
 import sys
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from typing import ClassVar
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -15,9 +16,9 @@ from crawleyes.sitemap import discover_sitemap_urls, parse_sitemap
 
 
 class _SitemapHandler(BaseHTTPRequestHandler):
-    routes: dict[str, bytes] = {}
+    routes: ClassVar[dict[str, bytes]] = {}
 
-    def do_GET(self):  # noqa: N802
+    def do_GET(self):
         body = self.routes.get(self.path)
         if body is None:
             self.send_response(404)
@@ -29,7 +30,7 @@ class _SitemapHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def log_message(self, format, *args):  # noqa: A002, N802
+    def log_message(self, format, *args):
         pass
 
 

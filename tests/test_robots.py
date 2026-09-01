@@ -26,7 +26,7 @@ class _RobotsHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b"page")
 
-    def log_message(self, format, *args):  # noqa: A002, N802
+    def log_message(self, format, *args):
         pass
 
 
@@ -41,7 +41,7 @@ class _NoRobotsHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b"page")
 
-    def log_message(self, format, *args):  # noqa: A002, N802
+    def log_message(self, format, *args):
         pass
 
 
