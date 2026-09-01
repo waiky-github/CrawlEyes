@@ -77,7 +77,7 @@ def parse_sitemap(sitemap_url: str, *, max_urls: int = _MAX_URLS,
         seen.add(url)
         try:
             data = _fetch(url)
-        except Exception as exc:  # noqa: BLE001 - fail open
+        except Exception as exc:
             logger.debug("sitemap fetch failed %s: %s", url, exc)
             return
         leaf, nested = _urls_from_xml(data)
@@ -116,7 +116,7 @@ def discover_sitemap_urls(origin: str, *, max_urls: int = _MAX_URLS,
                 loc = line.split(":", 1)[1].strip()
                 if loc:
                     return parse_sitemap(loc, max_urls=max_urls, max_depth=max_depth)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.debug("robots.txt sitemap discovery failed: %s", exc)
     return []
 

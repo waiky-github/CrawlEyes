@@ -71,7 +71,7 @@ async def check_robots(url: str) -> tuple[bool, str]:
                 else:
                     # 404 (no robots) or 4xx/5xx → allow, don't cache a broken one
                     return True, f"robots.txt HTTP {resp.status_code}"
-            except Exception as exc:  # noqa: BLE001 — network issues → fail open
+            except Exception as exc:
                 log.debug("robots fetch failed for %s: %s", host, exc)
                 return True, f"robots fetch error: {exc}"
             _cache_put(host, parser)
@@ -80,7 +80,7 @@ async def check_robots(url: str) -> tuple[bool, str]:
         if allowed:
             return True, "allowed by robots.txt"
         return False, "disallowed by robots.txt"
-    except Exception as exc:  # noqa: BLE001 — never let robots break scraping
+    except Exception as exc:
         log.debug("robots check error for %s: %s", url, exc)
         return True, f"robots check error: {exc}"
 

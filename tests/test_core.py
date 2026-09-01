@@ -119,7 +119,7 @@ if __name__ == "__main__":
         try:
             fn()
             print(f"  ✓ {fn.__name__}")
-        except Exception:  # noqa: BLE001 -- 测试 harness 需要捕获所有异常
+        except Exception:
             failed += 1
             print(f"  ✗ {fn.__name__}")
             traceback.print_exc()

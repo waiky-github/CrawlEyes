@@ -78,7 +78,7 @@ def test_retry_raises_after_all_attempts():
 
     try:
         retry_with_backoff(always_fail, attempts=2, base_delay=0.01, jitter=0)
-        assert False, "should have raised"
+        raise AssertionError("should have raised")
     except TimeoutError:
         pass
     assert calls["n"] == 2
@@ -97,7 +97,7 @@ def test_retry_respects_retryable_predicate():
             fn, attempts=3, base_delay=0.01, jitter=0,
             retryable=lambda e: isinstance(e, ConnectionError),
         )
-        assert False, "should have raised"
+        raise AssertionError("should have raised")
     except ValueError:
         pass
     assert calls["n"] == 1

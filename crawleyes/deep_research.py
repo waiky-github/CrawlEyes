@@ -130,7 +130,7 @@ async def _plan(llm: _LLM, topic: str, num: int = 4) -> list[str]:
             return [str(x) for x in data][:num]
         if isinstance(data, dict) and "questions" in data:
             return [str(x) for x in data["questions"]][:num]
-    except Exception:  # noqa: BLE001
+    except Exception:
         return []
     return []
 
@@ -173,7 +173,7 @@ async def _gather_evidence(sub_questions: list[str], per_q: int = 3) -> list[dic
             r = await markdown(s["url"], max_words=1500, retry=1, timeout=25)
             if r.get("success"):
                 s["content"] = r.get("markdown", "")[:2000]
-        except Exception:  # noqa: BLE001
+        except Exception:
             s["content"] = ""
 
     return sources
@@ -228,7 +228,7 @@ async def deep_research(topic: str, num_questions: int = 4, per_q: int = 3) -> R
             result.report = report.strip()
             result.mode = "llm"
             return result
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             result.errors.append(f"LLM synthesis failed: {e}")
 
     # Aggregate mode fallback: build a structured evidence summary ourselves

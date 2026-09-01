@@ -88,7 +88,7 @@ def test_invalid_json_returns_400():
         )
         try:
             urllib.request.urlopen(req, timeout=10)
-            assert False, "expected HTTPError"
+            raise AssertionError("expected HTTPError")
         except urllib.error.HTTPError as e:
             assert e.code == 400
             body = json.loads(e.read().decode("utf-8"))
@@ -103,7 +103,7 @@ def test_unknown_path_returns_404():
         req = urllib.request.Request(f"http://127.0.0.1:{PORT}/nope", method="GET")
         try:
             urllib.request.urlopen(req, timeout=10)
-            assert False, "expected HTTPError"
+            raise AssertionError("expected HTTPError")
         except urllib.error.HTTPError as e:
             assert e.code == 404
     finally:
@@ -147,7 +147,7 @@ if __name__ == "__main__":
         try:
             fn()
             print(f"  ✓ {fn.__name__}")
-        except Exception:  # noqa: BLE001
+        except Exception:
             failed += 1
             print(f"  ✗ {fn.__name__}")
             traceback.print_exc()

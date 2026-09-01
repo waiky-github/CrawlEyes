@@ -30,7 +30,7 @@ CACHE_TTL = 3600
 try:
     import pwd as _pwd
     _REAL_HOME = _pwd.getpwuid(os.getuid()).pw_dir
-except Exception:  # noqa: BLE001
+except Exception:
     _REAL_HOME = os.path.expanduser("~")
 CACHE_DB = os.path.join(_REAL_HOME, ".cache", "searxng_tavily_cache.db")
 
@@ -55,7 +55,7 @@ class _Cache:
             c.execute("""CREATE TABLE IF NOT EXISTS search_cache (
                 query TEXT PRIMARY KEY, results TEXT NOT NULL, created_at REAL NOT NULL)""")
             c.commit()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.debug("cache init failed: %s", e)
 
     def get(self, query: str) -> list[dict[str, Any]] | None:
@@ -69,7 +69,7 @@ class _Cache:
             if time.time() - created > CACHE_TTL:
                 return None
             return json.loads(results)
-        except Exception:  # noqa: BLE001
+        except Exception:
             return None
 
     def set(self, query: str, results: list[dict[str, Any]]):
@@ -78,7 +78,7 @@ class _Cache:
                 "INSERT OR REPLACE INTO search_cache VALUES (?,?,?)",
                 (query, json.dumps(results, ensure_ascii=False), time.time()))
             self._conn().commit()
-        except Exception:  # noqa: BLE001, S110  -- 缓存写失败静默，不影响搜索主流程
+        except Exception:
             pass
 
 
@@ -137,7 +137,7 @@ class CrawlSearch:
                 denom = (np.linalg.norm(qv) * np.linalg.norm(ev)) or 1.0
                 scores.append(float(qv @ ev / denom))
             # 按相似度降序, 返回带 score 的结果
-            ranked = sorted(zip(web, scores), key=lambda x: -x[1])
+            ranked = sorted(zip(web, scores, strict=True), key=lambda x: -x[1])
             out = []
             for i, (r, s) in enumerate(ranked):
                 r = dict(r)
@@ -145,7 +145,7 @@ class CrawlSearch:
                 r["position"] = i + 1
                 out.append(r)
             return out
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.warning("rerank failed (fallback to original order): %s", e)
             return web
 
@@ -163,12 +163,12 @@ class CrawlSearch:
             resp = httpx.get(f"{base_url}/search", params={"q": query, "format": "json"},
                              timeout=SEARXNG_TIMEOUT, headers={"Accept": "application/json"})
             resp.raise_for_status()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.info("SearXNG unavailable: %s", e)
             return {"success": False, "error": str(e)}
         try:
             data = resp.json()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             return {"success": False, "error": f"parse: {e}"}
         web = [
             {"title": r.get("title", ""), "url": r.get("url", ""),
@@ -188,11 +188,11 @@ class CrawlSearch:
             resp.raise_for_status()
         except ImportError:
             return {"success": False, "error": "httpx not installed"}
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             return {"success": False, "error": str(e)}
         try:
             data = resp.json()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             return {"success": False, "error": f"parse: {e}"}
         web = [
             {"title": r.get("title", ""), "url": r.get("url", ""),

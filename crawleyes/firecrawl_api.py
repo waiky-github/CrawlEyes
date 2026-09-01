@@ -72,7 +72,7 @@ class Handler(BaseHTTPRequestHandler):
             length = int(self.headers.get("Content-Length", 0) or 0)
             raw = self.rfile.read(length) if length else b"{}"
             req = json.loads(raw.decode("utf-8") or "{}")
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             self._send_json(400, {"success": False, "error": f"invalid JSON body: {e}"})
             return
 
@@ -87,7 +87,7 @@ class Handler(BaseHTTPRequestHandler):
 
         try:
             result = _scrape_sync(url, timeout=timeout, max_words=max_words)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             self._send_json(500, {"success": False, "error": f"scrape failed: {e}"})
             return
 

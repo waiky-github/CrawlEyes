@@ -33,14 +33,14 @@ import sys
 # 保证能 import 插件和脚本
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# 复用独立搜索实现（不依赖 Hermes agent 包）—— 放所有 import 顶部避免 E402
 from mcp.server.fastmcp import FastMCP
 
-mcp = FastMCP("crawl-search")
-
-# 复用独立搜索实现（不依赖 Hermes agent 包）
 from .crawl_search_standalone import CrawlSearch
 from .rate_limit import default_limiter, retry_with_backoff
 from .sanitize import sanitize_markdown
+
+mcp = FastMCP("crawl-search")
 
 # 默认开启语义重排 (P2: fastembed + bge-small-zh)
 _search = CrawlSearch(rerank=True)
@@ -61,7 +61,7 @@ def search(query: str, limit: int = 5) -> str:
     default_limiter.acquire("search")
     try:
         result = retry_with_backoff(_search_once, query, limit, attempts=3)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return json.dumps({"error": f"search failed after retries: {exc}"}, ensure_ascii=False)
     if not result.get("success"):
         return json.dumps({"error": result.get("error", "unknown")}, ensure_ascii=False)

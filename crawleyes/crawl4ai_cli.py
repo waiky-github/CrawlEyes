@@ -173,7 +173,7 @@ async def scrape(url, timeout=30, max_words=0, text_only=False, js_code=None,
                         "markdown": md,
                     }
                 err = result.error_message or "未知错误"
-        except Exception as exc:  # noqa: BLE001 — 抓取失败原因多样
+        except Exception as exc:
             err = f"{type(exc).__name__}: {exc}"
 
         if attempt > retry:
