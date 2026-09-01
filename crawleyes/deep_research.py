@@ -28,6 +28,7 @@ from typing import Any
 
 from .crawl_search_standalone import CrawlSearch
 from .rag import markdown
+from .rate_limit import default_limiter
 
 _search = CrawlSearch(rerank=True)
 
@@ -139,9 +140,11 @@ async def _gather_evidence(sub_questions: list[str], per_q: int = 3) -> list[dic
     sources: list[dict[str, Any]] = []
     seen: set = set()
 
-    # Phase 1: search all sub-questions
+    # Phase 1: search all sub-questions (with unified rate limit, P2-H)
     search_batches: list[dict[str, Any]] = []
     for q in sub_questions:
+        # deep_research 内部多轮搜索也走统一限流，防打爆下游
+        await asyncio.to_thread(default_limiter.acquire, "search", 1)
         r = _search.search(q, limit=per_q * 2)
         if not r.get("success"):
             continue
@@ -162,9 +165,11 @@ async def _gather_evidence(sub_questions: list[str], per_q: int = 3) -> list[dic
                 "content": "",
             })
 
-    # Phase 3: fetch content for top sources (bounded)
+    # Phase 3: fetch content for top sources (bounded, with unified rate limit P2-H)
     for s in sources[: per_q * len(sub_questions)]:
         try:
+            # deep_research 内部抓取也走统一限流（与 MCP extract 同 cost）
+            await asyncio.to_thread(default_limiter.acquire, "extract", 3)
             r = await markdown(s["url"], max_words=1500, retry=1, timeout=25)
             if r.get("success"):
                 s["content"] = r.get("markdown", "")[:2000]

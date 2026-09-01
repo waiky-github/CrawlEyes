@@ -47,7 +47,9 @@ def _search_once(query: str, limit: int) -> dict:
 def search(query: str, limit: int = 5) -> str:
     """搜索网页。SearXNG 优先，失败自动 fallback Tavily keyless（无需 API key）。
     带统一限流 + 指数退避重试（最多 3 次）。
+    limit 会被 clamp 到 [1, 20]，防止传超大值打爆下游。
     Returns JSON with title/url/description for each result."""
+    limit = max(1, min(limit, 20))  # P2-F: clamp 防止打爆下游
     default_limiter.acquire("search")
     try:
         result = retry_with_backoff(_search_once, query, limit, attempts=3)
@@ -70,6 +72,12 @@ async def extract(url: str, max_words: int = 8000, respect_robots: bool = False,
     Returns JSON with title/markdown/length."""
     from .crawl4ai_cli import scrape
     import asyncio
+    # P2-I: max_words 护栏 —— 0 表示不截断(全量)；负值/极小值 clamp 到 100，
+    # 防止误传产生无意义结果
+    if max_words is None:
+        max_words = 0
+    elif max_words < 0:
+        max_words = 0
     # 统一限流：extract 是重操作（启动浏览器），cost=3 防止并发打爆目标站
     # 用 to_thread 避免阻塞 MCP 事件循环
     await asyncio.to_thread(default_limiter.acquire, "extract", 3)
@@ -92,10 +100,11 @@ async def extract(url: str, max_words: int = 8000, respect_robots: bool = False,
 async def sitemap(origin: str, max_urls: int = 500) -> str:
     """发现站点 URL 地图。解析 {origin}/sitemap.xml（支持 index/gzip），
     缺失时回退 robots.txt 的 Sitemap 声明。返回去重后的 URL 列表 JSON。
-    用于整站抓取 / deep_research 扩 URL 源。"""
+    用于整站抓取 / deep_research 扩 URL 源。带统一限流。"""
     from .sitemap import discover_sitemap_urls
     import asyncio
-    # urllib 同步阻塞 → to_thread 避免阻塞 MCP 事件循环
+    # P2-G: sitemap 接统一限流（urllib 同步阻塞 → to_thread 避免阻塞事件循环）
+    await asyncio.to_thread(default_limiter.acquire, "sitemap", 2)
     urls = await asyncio.to_thread(discover_sitemap_urls, origin, max_urls=max_urls)
     return json.dumps({"origin": origin, "count": len(urls), "urls": urls}, ensure_ascii=False)
 
