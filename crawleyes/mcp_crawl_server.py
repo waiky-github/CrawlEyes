@@ -39,8 +39,8 @@ mcp = FastMCP("crawl-search")
 
 # 复用独立搜索实现（不依赖 Hermes agent 包）
 from .crawl_search_standalone import CrawlSearch
-from .sanitize import sanitize_markdown
 from .rate_limit import default_limiter, retry_with_backoff
+from .sanitize import sanitize_markdown
 
 # 默认开启语义重排 (P2: fastembed + bge-small-zh)
 _search = CrawlSearch(rerank=True)
@@ -78,8 +78,9 @@ async def extract(url: str, max_words: int = 8000, respect_robots: bool = False,
     respect_robots=True 时先检查目标站 robots.txt (RFC 9309)，被 Disallow 则拒绝。
     format: markdown(默认) | fit | raw | markdown_with_citations。
     Returns JSON with title/markdown/length."""
-    from .crawl4ai_cli import scrape
     import asyncio
+
+    from .crawl4ai_cli import scrape
     # P2-I: max_words 护栏 —— 0 表示不截断(全量)；负值/极小值 clamp 到 100，
     # 防止误传产生无意义结果
     if max_words is None:

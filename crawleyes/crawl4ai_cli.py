@@ -133,23 +133,28 @@ async def scrape(url, timeout=30, max_words=0, text_only=False, js_code=None,
                         md = _re.sub(r"\n\n+", "\n\n", md).strip()
                         # 在每段末尾追加 [来源: url]（跳过已有链接行和标题行）
                         lines = md.split("\n")
-                        out, para = [], []
-                        def flush():
+                        out: list[str] = []
+                        para: list[str] = []
+
+                        def flush(para: list[str], out: list[str]) -> list[str]:
+                            """把 para 里的段落 flush 到 out（带来源引用），返回新 out。"""
                             if para:
                                 t = "\n".join(para).strip()
                                 if t:
                                     out.append(t + f"\n\n<sub>来源: {url}</sub>")
                                 para.clear()
+                            return out
+
                         for ln in lines:
                             if ln.strip() == "":
-                                flush()
+                                flush(para, out)
                             elif ln.startswith(("#", ">", "-", "*", "|")) or "[" in ln and "](" in ln:
                                 # 标题/引用/列表/已有链接行保持原样
-                                flush()
+                                flush(para, out)
                                 out.append(ln)
                             else:
                                 para.append(ln)
-                        flush()
+                        flush(para, out)
                         md = "\n".join(out)
                     if text_only:
                         import re
