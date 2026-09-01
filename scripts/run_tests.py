@@ -20,10 +20,11 @@ TESTS_DIR = ROOT / "tests"
 
 # 测试文件（按依赖/重要性排序）
 TEST_FILES = [
-    "test_core.py",        # 核心逻辑 + MCP 工具注册（6 项）
-    "test_rate_limit.py",  # 统一限流（8 项）
-    "test_robots.py",      # robots.txt 可选遵守（4 项）
-    "test_sitemap.py",     # sitemap 发现（6 项）
+    "test_core.py",           # 核心逻辑 + MCP 工具注册（6 项）
+    "test_rate_limit.py",     # 统一限流（8 项）
+    "test_robots.py",         # robots.txt 可选遵守（4 项）
+    "test_sitemap.py",        # sitemap 发现（6 项）
+    "test_firecrawl_api.py",  # firecrawl 兼容 /scrape 协议（6 项）
 ]
 
 

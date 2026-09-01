@@ -141,6 +141,27 @@ mcp_servers:
     connect_timeout: 60
 ```
 
+### 4b. Firecrawl-compatible `/scrape` endpoint
+
+Already using Firecrawl's Python SDK? Point it at CrawlEyes and keep your code:
+
+```bash
+.venv/bin/python -m crawleyes.firecrawl_api --port 8899 --host 127.0.0.1
+#   POST /v2/scrape  →  { success, data: { markdown, metadata } }
+#   GET  /healthz    →  health check
+```
+
+```python
+from firecrawl import Firecrawl
+fc = Firecrawl(api_url="http://127.0.0.1:8899", api_key="ignored")
+doc = fc.scrape(url="https://example.com")   # → { markdown, metadata }
+```
+
+This is a pragmatic subset of the Firecrawl API — the core `/scrape` contract
+(`success` + `data.markdown` + `data.metadata`), backed by CrawlEyes' own
+extraction engine. It does **not** implement Firecrawl's async `/crawl` queue,
+`/search`, or `/map` — see the design notes for the rationale.
+
 ### 5. Install the search plugin (Hermes)
 
 Copy `plugins/searxng-tavily/` into a Hermes plugins dir, then:
