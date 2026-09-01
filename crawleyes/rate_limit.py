@@ -22,7 +22,8 @@ import logging
 import threading
 import time
 from collections import defaultdict
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +75,7 @@ class RateLimiter:
                     return True
                 oldest = min(s[0] for s in self._stamps[key])
                 wait = (oldest + self._window) - now
-        except Exception:  # noqa: BLE001 - fail open
+        except Exception:  # fail open
             logger.debug("rate limiter error, passing through: %s", exc_info=True)
             return True
 
@@ -119,7 +120,7 @@ def retry_with_backoff(
     for n in range(attempts):
         try:
             return fn(*args, **kwargs)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             last_exc = exc
             if retryable is not None and not retryable(exc):
                 raise

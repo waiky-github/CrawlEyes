@@ -12,7 +12,7 @@ import urllib.request
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from crawleyes import firecrawl_api  # noqa: E402
+from crawleyes import firecrawl_api
 
 
 class _ScrapeEngine:

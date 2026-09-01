@@ -81,11 +81,8 @@ async def extract(url: str, max_words: int = 8000, respect_robots: bool = False,
     import asyncio
 
     from .crawl4ai_cli import scrape
-    # P2-I: max_words 护栏 —— 0 表示不截断(全量)；负值/极小值 clamp 到 100，
-    # 防止误传产生无意义结果
-    if max_words is None:
-        max_words = 0
-    elif max_words < 0:
+    # P2-I: max_words 护栏 —— None/负值 归零（0=不截断全量）
+    if max_words is None or max_words < 0:
         max_words = 0
     # 统一限流：extract 是重操作（启动浏览器），cost=3 防止并发打爆目标站
     # 用 to_thread 避免阻塞 MCP 事件循环
@@ -110,8 +107,9 @@ async def sitemap(origin: str, max_urls: int = 500) -> str:
     """发现站点 URL 地图。解析 {origin}/sitemap.xml（支持 index/gzip），
     缺失时回退 robots.txt 的 Sitemap 声明。返回去重后的 URL 列表 JSON。
     用于整站抓取 / deep_research 扩 URL 源。带统一限流。"""
-    from .sitemap import discover_sitemap_urls
     import asyncio
+
+    from .sitemap import discover_sitemap_urls
     # P2-G: sitemap 接统一限流（urllib 同步阻塞 → to_thread 避免阻塞事件循环）
     await asyncio.to_thread(default_limiter.acquire, "sitemap", 2)
     urls = await asyncio.to_thread(discover_sitemap_urls, origin, max_urls=max_urls)
@@ -124,8 +122,9 @@ async def deep_research(topic: str, num_questions: int = 4, per_q: int = 3) -> s
     Uses SearXNG → Tavily keyless (no API key). Optional LLM synthesis via
     CRAWLEYES_LLM_* env vars; without them returns an evidence-aggregate report.
     Returns JSON with report (Markdown) + sources."""
-    from .deep_research import deep_research as run_research
     import asyncio
+
+    from .deep_research import deep_research as run_research
     # deep_research 是最重的操作（多轮搜索+抓取+LLM），cost=5 强限流防并发
     await asyncio.to_thread(default_limiter.acquire, "deep_research", 5)
     result = await run_research(topic, num_questions=num_questions, per_q=per_q)

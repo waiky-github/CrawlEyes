@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 class _RobotsHandler(BaseHTTPRequestHandler):
     robots_body = b"User-agent: *\nDisallow: /admin/\n"
 
-    def do_GET(self):  # noqa: N802
+    def do_GET(self):
         if self.path == "/robots.txt":
             self.send_response(200)
             self.send_header("Content-Type", "text/plain")
@@ -31,7 +31,7 @@ class _RobotsHandler(BaseHTTPRequestHandler):
 
 
 class _NoRobotsHandler(BaseHTTPRequestHandler):
-    def do_GET(self):  # noqa: N802
+    def do_GET(self):
         if self.path == "/robots.txt":
             self.send_response(404)
             self.end_headers()

@@ -33,7 +33,7 @@ _NS = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
 
 def _fetch(url: str) -> bytes:
     req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
-    with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:  # noqa: S310
+    with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
         data = resp.read()
     if data[:2] == b"\x1f\x8b":  # gzip magic
         data = gzip.decompress(data)
@@ -44,7 +44,7 @@ def _urls_from_xml(data: bytes) -> tuple[list[str], list[str]]:
     """Parse XML, return (leaf urls, nested sitemap urls)."""
     try:
         root = ET.fromstring(data)
-    except ET.ParseError as exc:  # noqa: BLE001
+    except ET.ParseError as exc:
         logger.debug("sitemap XML parse failed: %s", exc)
         return [], []
 

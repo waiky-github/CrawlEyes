@@ -24,11 +24,12 @@ jobs:
 
       # Install with --no-deps so CI doesn't pull heavy runtime deps
       # (crawl4ai/playwright are runtime deps, not needed for offline logic tests)
+      # ruff is pinned to avoid rule-set drift breaking CI on ruff upgrades
       - name: Install package (no-deps) + dev tools
         run: |
           python -m pip install --upgrade pip
           pip install --no-deps -e .
-          pip install ruff build
+          pip install ruff==0.16.5 build
 
       - name: Lint (ruff)
         run: ruff check crawleyes/ tests/ --output-format=github
