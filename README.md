@@ -43,7 +43,7 @@ Most agent toolkits cover *one* slice of the pipeline. CrawlEyes is the rare **a
 | **Search (fallback)** | Tavily keyless API | Zero-config, no-key fallback when SearXNG is down/empty |
 | **Search orchestration** | `plugins/searxng-tavily/` | Hermes plugin provider: SearXNG first → auto-fallback to Tavily keyless; three-state circuit breaker (3 fails → 60s cooldown → half-open) + shared SQLite cache (TTL 3600s) |
 | **Semantic reranking** (P2) | `scripts/crawl_search_standalone.py` | Local embedding rerank of search results with `fastembed` + `BAAI/bge-small-zh-v1.5` (512-dim, **no torch dependency**, ~50MB, cached) — puts relevant results first. Measured: crawler-relevant items 0.817/0.732 float to top, irrelevant 0.302/0.139 sink |
-| **MCP server** (P5) | `scripts/mcp_crawl_server.py` | Exposes `search` + `extract` + `deep_research` + `sitemap` as standard MCP tools (stdio transport). Works in *any* MCP client, no Hermes dependency. Extracted content is sanitized against prompt-injection (strips invisible chars + prompt-hijack lines). **Unified rate limiting + exponential backoff** guard every tool (sliding window, per-tool cost) so concurrent agent calls can't hammer downstream services |
+| **MCP server** (P5) | `scripts/mcp_crawl_server.py` | Exposes `search` + `extract` + `deep_research` + `sitemap` as standard MCP tools (**stdio default, or streamable-http** for remote clients). Works in *any* MCP client, no Hermes dependency. Extracted content is sanitized against prompt-injection (strips invisible chars + prompt-hijack lines). **Unified rate limiting + exponential backoff** guard every tool (sliding window, per-tool cost) so concurrent agent calls can't hammer downstream services |
 | **Sitemap discovery** (P1) | `crawleyes/sitemap.py` | `sitemap(origin)` → parses `sitemap.xml` (plain / gzip / index-recursion) with `robots.txt` fallback, returns a deduped URL map. Zero-key way to discover a site's URL surface for whole-site fetch or deep-research seeding |
 | **Multi-format extract** (P0) | `extract(..., format=)` | `markdown` (default) / `fit` (denoised) / `raw` (unfiltered) / `markdown_with_citations` — pick the level of cleanup you need |
 | **RAG-ready interfaces** | `crawleyes/rag.py` | One-liners `markdown(url)` / `search_markdown(query)` → clean, sanitized, LLM-ready Markdown for RAG corpora |
@@ -116,13 +116,18 @@ print(r['data']['web'])"
 ### 4. Run as an MCP server (any client)
 
 ```bash
-# Any MCP client can connect via stdio:
+# Any MCP client can connect via stdio (default):
 .venv/bin/python scripts/mcp_crawl_server.py
 # Exposes tools:
 #   search(query, limit)                 - SearXNG → Tavily keyless, rerank, retry+rate-limit
 #   extract(url, max_words, format)      - markdown|fit|raw|markdown_with_citations
 #   deep_research(topic, num_questions)  - multi-round cited report
 #   sitemap(origin, max_urls)            - URL map from sitemap.xml / robots.txt
+
+# Or serve over HTTP (streamable-http) for remote clients:
+.venv/bin/python -m crawleyes.mcp_crawl_server --transport http --port 8765 --host 127.0.0.1
+#   → clients connect to http://127.0.0.1:8765/mcp
+#   (host/port configurable; default 127.0.0.1:8765)
 ```
 
 For Hermes specifically, add to `config.yaml`:
@@ -165,6 +170,8 @@ venv/bin/python scripts/agent_link_check.py $HERMES_HOME
 - **Shared SQLite cache** lives in the *real* user home (via `pwd.getpwuid`, not `$HOME` — which Hermes profiles override), so all profiles share one cache. WAL + 5s timeout + try/except degrade-to-no-cache under concurrency.
 - **Semantic rerank is cheap**: fastembed (ONNX) avoids the ~2GB torch dependency; model loads in ~0.6s once cached, embeddings in ~50ms.
 - **MCP server is standalone**: it does *not* import Hermes internals, so it runs on any Python 3.12 env and serves any MCP client.
+- **MCP transport is dual**: stdio (default, standard MCP clients) or `streamable-http` (`--transport http`), so a single codebase serves both local process and remote HTTP clients.
+- **Unified rate limiting is layered**: MCP tools *and* deep-research's internal search/extract all share one sliding-window limiter (per-tool cost), so concurrent agent fan-out can't hammer SearXNG/Tavily/Crawl4AI even through multi-round deep research.
 
 ## Credits & inspiration
 
