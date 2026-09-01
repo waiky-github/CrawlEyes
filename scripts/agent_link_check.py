@@ -8,11 +8,10 @@
   5. 日志出现 'Web search via searxng-tavily'（真实 agent 记录点）
 用法: venv/bin/python /path/agent_link_check.py <HERMES_HOME>
 """
+import json
 import os
 import sys
-import json
-import logging
-import io
+
 
 def main():
     hermes_home = sys.argv[1] if len(sys.argv) > 1 else ""
@@ -45,19 +44,22 @@ def main():
     p = get_provider("searxng-tavily")
     print(f"[1] searxng-tavily registered: {p is not None}")
     if p is None:
-        print("    FAIL: provider 未注册"); sys.exit(1)
+        print("    FAIL: provider 未注册")
+        sys.exit(1)
     print(f"    is_available: {p.is_available()}  supports_search: {p.supports_search()}")
 
-    from tools.web_tools import _get_search_backend, _get_extract_backend, _is_backend_available
+    from tools.web_tools import _get_extract_backend, _get_search_backend, _is_backend_available
     sb = _get_search_backend()
     eb = _get_extract_backend()
     print(f"[2] search_backend = {sb}  (expect searxng-tavily)")
     print(f"[3] extract_backend = {eb}  (expect crawl4ai)")
     print(f"    is_available(search)={_is_backend_available(sb)}  is_available(extract)={_is_backend_available(eb)}")
     if sb != "searxng-tavily":
-        print("    FAIL: search_backend 不是 searxng-tavily"); sys.exit(1)
+        print("    FAIL: search_backend 不是 searxng-tavily")
+        sys.exit(1)
     if eb != "crawl4ai":
-        print("    FAIL: extract_backend 不是 crawl4ai"); sys.exit(1)
+        print("    FAIL: extract_backend 不是 crawl4ai")
+        sys.exit(1)
 
     # 真实工具调用（同步，不能 await）
     from tools.web_tools import web_search_tool
@@ -71,7 +73,8 @@ def main():
         for r in results[:2]:
             print(f"      - {r.get('title','')[:60]}")
         if not ok or not results:
-            print("    FAIL: 搜索无结果"); sys.exit(1)
+            print("    FAIL: 搜索无结果")
+            sys.exit(1)
     except Exception as e:
         print(f"    FAIL: web_search_tool 异常: {type(e).__name__}: {e}")
         sys.exit(1)

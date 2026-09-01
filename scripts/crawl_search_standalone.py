@@ -17,7 +17,7 @@ import os
 import sqlite3
 import threading
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ CACHE_TTL = 3600
 try:
     import pwd as _pwd
     _REAL_HOME = _pwd.getpwuid(os.getuid()).pw_dir
-except Exception:  # noqa: BLE001
+except Exception:
     _REAL_HOME = os.path.expanduser("~")
 CACHE_DB = os.path.join(_REAL_HOME, ".cache", "searxng_tavily_cache.db")
 
@@ -55,10 +55,10 @@ class _Cache:
             c.execute("""CREATE TABLE IF NOT EXISTS search_cache (
                 query TEXT PRIMARY KEY, results TEXT NOT NULL, created_at REAL NOT NULL)""")
             c.commit()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.debug("cache init failed: %s", e)
 
-    def get(self, query: str) -> Optional[List[Dict[str, Any]]]:
+    def get(self, query: str) -> list[dict[str, Any]] | None:
         try:
             row = self._conn().execute(
                 "SELECT results, created_at FROM search_cache WHERE query=?",
@@ -69,16 +69,16 @@ class _Cache:
             if time.time() - created > CACHE_TTL:
                 return None
             return json.loads(results)
-        except Exception:  # noqa: BLE001
+        except Exception:
             return None
 
-    def set(self, query: str, results: List[Dict[str, Any]]):
+    def set(self, query: str, results: list[dict[str, Any]]):
         try:
             self._conn().execute(
                 "INSERT OR REPLACE INTO search_cache VALUES (?,?,?)",
                 (query, json.dumps(results, ensure_ascii=False), time.time()))
             self._conn().commit()
-        except Exception:  # noqa: BLE001
+        except Exception:
             pass
 
 
@@ -90,7 +90,7 @@ class CrawlSearch:
         self._rerank = rerank
         self._reranker = None
 
-    def search(self, query: str, limit: int = 5, rerank: bool | None = None) -> Dict[str, Any]:
+    def search(self, query: str, limit: int = 5, rerank: bool | None = None) -> dict[str, Any]:
         do_rerank = self._rerank if rerank is None else rerank
         cached = self._cache.get(query)
         if cached is not None:
@@ -122,7 +122,7 @@ class CrawlSearch:
             self._reranker = TextEmbedding("BAAI/bge-small-zh-v1.5")
         return self._reranker
 
-    def _rerank_results(self, query: str, web: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _rerank_results(self, query: str, web: list[dict[str, Any]]) -> list[dict[str, Any]]:
         try:
             import numpy as np
             model = self._get_reranker()
@@ -138,7 +138,7 @@ class CrawlSearch:
                 denom = (np.linalg.norm(qv) * np.linalg.norm(ev)) or 1.0
                 scores.append(float(qv @ ev / denom))
             # 按相似度降序, 返回带 score 的结果
-            ranked = sorted(zip(web, scores), key=lambda x: -x[1])
+            ranked = sorted(zip(web, scores, strict=True), key=lambda x: -x[1])
             out = []
             for i, (r, s) in enumerate(ranked):
                 r = dict(r)
@@ -146,11 +146,11 @@ class CrawlSearch:
                 r["position"] = i + 1
                 out.append(r)
             return out
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.warning("rerank failed (fallback to original order): %s", e)
             return web
 
-    def _searxng(self, query: str, limit: int) -> Dict[str, Any]:
+    def _searxng(self, query: str, limit: int) -> dict[str, Any]:
         import httpx
         base_url = os.getenv("SEARXNG_URL", "").strip().rstrip("/")
         if not base_url:
@@ -159,12 +159,12 @@ class CrawlSearch:
             resp = httpx.get(f"{base_url}/search", params={"q": query, "format": "json"},
                              timeout=SEARXNG_TIMEOUT, headers={"Accept": "application/json"})
             resp.raise_for_status()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.info("SearXNG unavailable: %s", e)
             return {"success": False, "error": str(e)}
         try:
             data = resp.json()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             return {"success": False, "error": f"parse: {e}"}
         web = [
             {"title": r.get("title", ""), "url": r.get("url", ""),
@@ -174,18 +174,18 @@ class CrawlSearch:
         ]
         return {"success": True, "data": {"web": web}}
 
-    def _tavily(self, query: str, limit: int) -> Dict[str, Any]:
+    def _tavily(self, query: str, limit: int) -> dict[str, Any]:
         import httpx
         try:
             resp = httpx.post(f"{TAVILY_API}/search",
                               json={"query": query, "max_results": min(limit, 20)},
                               headers=KEYLESS_HEADER, timeout=TAVILY_TIMEOUT)
             resp.raise_for_status()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             return {"success": False, "error": str(e)}
         try:
             data = resp.json()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             return {"success": False, "error": f"parse: {e}"}
         web = [
             {"title": r.get("title", ""), "url": r.get("url", ""),

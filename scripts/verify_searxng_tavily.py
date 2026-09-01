@@ -5,7 +5,10 @@
 验证: 1) 加载 .env 2) provider 注册+available 3) SearXNG 正常搜索
       4) 强制 fallback: 把 SEARXNG_URL 指向不通地址, 验证自动切 Tavily keyless
 """
-import os, sys, json, traceback
+import json
+import os
+import sys
+import traceback
 from pathlib import Path
 
 hermes_home = sys.argv[1]
@@ -26,17 +29,19 @@ if env_path.exists():
 
 out = {"ok": False, "steps": []}
 try:
-    from hermes_cli.plugins import discover_plugins
     from agent.web_search_registry import get_provider
+    from hermes_cli.plugins import discover_plugins
     discover_plugins(force=False)
     prov = get_provider("searxng-tavily")
     if prov is None:
         out["steps"].append("provider 未注册 ❌")
-        print(dumps(out)); sys.exit(1)
+        print(dumps(out))
+        sys.exit(1)
     out["steps"].append(f"provider 已注册, is_available={prov.is_available()}")
     if not prov.is_available():
         out["steps"].append("is_available=False ❌")
-        print(dumps(out)); sys.exit(1)
+        print(dumps(out))
+        sys.exit(1)
 
     # 1. SearXNG 正常路径
     r1 = prov.search("Hermes agent", limit=3)

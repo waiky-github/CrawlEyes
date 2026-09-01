@@ -19,17 +19,18 @@ SearXNG-Tavily MCP Server
   #       args: ["/path/to/your/crawl/scripts/mcp_crawl_server.py"]
   #       env: { SEARXNG_URL: "https://your-searxng" }
 """
-import asyncio, os, sys, json
+import json
+import os
+import sys
 
 # 保证能 import 插件和脚本
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# 复用独立搜索实现（不依赖 Hermes agent 包）
+from crawl_search_standalone import CrawlSearch
 from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP("crawl-search")
-
-# 复用独立搜索实现（不依赖 Hermes agent 包）
-from crawl_search_standalone import CrawlSearch
 
 # 默认开启语义重排 (P2: fastembed + bge-small-zh)
 _search = CrawlSearch(rerank=True)

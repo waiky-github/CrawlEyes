@@ -32,7 +32,7 @@ jobs:
           pip install ruff==0.16.5 build
 
       - name: Lint (ruff)
-        run: ruff check crawleyes/ tests/ --output-format=github
+        run: ruff check crawleyes/ tests/ scripts/ --output-format=github
 
       - name: Run offline logic tests
         run: python scripts/run_tests.py

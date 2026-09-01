@@ -21,7 +21,8 @@ CRED_FILE = "/home/agentuser/.git-credentials"
 
 
 def get_token() -> str:
-    c = open(CRED_FILE).read()
+    with open(CRED_FILE) as f:
+        c = f.read()
     for line in c.splitlines():
         m = re.match(r"https://waiky-github:([^@]+)@github\.com", line)
         if m:

@@ -9,7 +9,6 @@
 """
 from __future__ import annotations
 
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -41,9 +40,9 @@ def run_one(name: str, python: str) -> bool:
         print(r.stdout.rstrip())
         if r.stdout:
             # 显示最后一行（N/M passed 或 exit 标记）
-            last = [l for l in r.stdout.splitlines() if l.strip()][-1:]
-            for l in last:
-                print(f"  → {l}")
+            last = [line for line in r.stdout.splitlines() if line.strip()][-1:]
+            for line in last:
+                print(f"  → {line}")
         if r.returncode != 0:
             print(f"  ❌ {name} 失败 (exit={r.returncode})")
             if r.stderr:
@@ -54,7 +53,7 @@ def run_one(name: str, python: str) -> bool:
     except subprocess.TimeoutExpired:
         print(f"  ❌ {name} 超时")
         return False
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         print(f"  ❌ {name} 运行异常: {e}")
         return False
 
