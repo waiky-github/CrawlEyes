@@ -34,7 +34,7 @@ jobs:
         run: ruff check crawleyes/ tests/ --output-format=github
 
       - name: Run offline logic tests
-        run: python tests/test_core.py
+        run: python scripts/run_tests.py
 
   build:
     name: Build sdist + wheel
