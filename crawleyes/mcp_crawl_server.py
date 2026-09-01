@@ -1,13 +1,21 @@
 #!/usr/bin/env python3
 """
-SearXNG-Tavily MCP Server
-==========================
-把 crawl 项目的搜索 + 抓取能力暴露成标准 MCP 工具，任何 MCP 客户端
-（Hermes / Claude / Cursor / 其他 agent）都能通过 stdio 接入。
+CrawlEyes MCP Server
+====================
+把 CrawlEyes的搜索 + 抓取 + 深度调研能力暴露成标准 MCP 工具，任何 MCP 客户端
+（Hermes / Claude / Cursor / 其他 agent）都能接入。
 
 工具:
-  - search(query, limit)    : 搜索。SearXNG 优先，失败自动 fallback Tavily keyless
-  - extract(url, max_words) : 抓取网页正文为 Markdown（Crawl4AI + 正文去噪）
+  - search(query, limit)     : 搜索。SearXNG 优先，失败自动 fallback Tavily keyless
+  - extract(url, max_words, format) : 抓取网页正文为 Markdown（Crawl4AI + 正文去噪，多格式）
+  - sitemap(origin)          : 站点地图发现（整站 URL 列表）
+  - deep_research(topic)     : 深度调研（子问题分解 + 多源检索 + 汇总报告）
+
+传输方式:
+  stdio（默认）: 标准 MCP 客户端进程内接入，mcp_crawl_server.py 直接运行
+  http（可选） : streamable-http 远程接入，任何能访问端口的客户端都能连:
+      python -m crawleyes.mcp_crawl_server --transport http --port 8765 --host 127.0.0.1
+      客户端连接 http://127.0.0.1:8765/mcp
 
 用法:
   /path/to/your/crawl/.venv/bin/python /path/to/your/crawl/scripts/mcp_crawl_server.py
@@ -132,8 +140,29 @@ async def deep_research(topic: str, num_questions: int = 4, per_q: int = 3) -> s
 
 
 def main():
-    """Console entry point for the MCP server."""
-    mcp.run()
+    """Console entry point for the MCP server.
+
+    Default transport is stdio (standard MCP clients). Pass --transport http
+    to serve over HTTP (streamable-http) for remote clients, e.g.:
+        python scripts/mcp_crawl_server.py --transport http --port 8765
+    """
+    import argparse
+    parser = argparse.ArgumentParser(description="CrawlEyes MCP server")
+    parser.add_argument("--transport", choices=["stdio", "http"], default="stdio",
+                        help="传输方式: stdio(默认, MCP 客户端标准) / http(streamable-http 远程)")
+    parser.add_argument("--port", type=int, default=8765, help="HTTP 端口 (transport=http 时)")
+    parser.add_argument("--host", default="127.0.0.1", help="HTTP 监听地址 (transport=http 时)")
+    args = parser.parse_args()
+
+    if args.transport == "http":
+        # streamable-http 的 host/port 由 FastMCP settings 控制，需先设置
+        mcp.settings.host = args.host
+        mcp.settings.port = args.port
+        # 提示远程客户端连接方式
+        print(f"CrawlEyes MCP over HTTP: http://{args.host}:{args.port}/mcp", flush=True)
+        mcp.run(transport="streamable-http")
+    else:
+        mcp.run()
 
 
 if __name__ == "__main__":
