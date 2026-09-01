@@ -171,7 +171,9 @@ This project builds on a set of excellent open-source tools. All code here is an
 
 ## Compliance
 
-Respect each target site's `robots.txt` and terms of service. This toolkit is for legitimate research and personal use. It deliberately does **not** include proxy pools, fingerprint rotation, or CAPTCHA-solving (anti-scraping evasion) — those are out of scope.
+CrawlEyes is a general-purpose fetch toolkit for legitimate research and personal use. It deliberately does **not** include proxy pools, fingerprint rotation, or CAPTCHA-solving (anti-scraping evasion) — those are out of scope.
+
+**Robots.txt is opt-in** (default off): pass `respect_robots=True` to `extract` / `markdown` (or `--respect-robots` on the CLI) to check each target's `robots.txt` (RFC 9309) and refuse URLs it explicitly disallows. It's default-off so legitimate scraping isn't silently blocked by aggressive or broken robots rules — compliance is the caller's informed choice per use case. Always review each site's terms of service before scraping at scale.
 
 ## License
 

@@ -10,12 +10,12 @@ SearXNG-Tavily MCP Server
   - extract(url, max_words) : 抓取网页正文为 Markdown（Crawl4AI + 正文去噪）
 
 用法:
-  crawl/.venv/bin/python scripts/mcp_crawl_server.py
+  python scripts/mcp_crawl_server.py
   # 或配置到 MCP 客户端:
   #   mcp_servers:
   #     crawl:
-  #       command: "/home/agentuser/crawl/.venv/bin/python"
-  #       args: ["/home/agentuser/crawl/scripts/mcp_crawl_server.py"]
+  #       command: "/path/to/your/venv/bin/python"
+  #       args: ["/path/to/crawl/scripts/mcp_crawl_server.py"]
   #       env: { SEARXNG_URL: "https://your-searxng" }
 """
 import json
@@ -50,13 +50,17 @@ def search(query: str, limit: int = 5) -> str:
 
 
 @mcp.tool()
-async def extract(url: str, max_words: int = 8000) -> str:
+async def extract(url: str, max_words: int = 8000, respect_robots: bool = False,
+                  format: str = "markdown") -> str:
     """抓取网页正文为 Markdown。自动去噪（过滤导航/广告），失败自动重试。
     返回前会剥离隐藏文字 + 标记可疑注入，防止 prompt-injection 劫持 Agent。
+    respect_robots=True 时先检查目标站 robots.txt (RFC 9309)，被 Disallow 则拒绝。
+    format: markdown(默认) | fit | raw | markdown_with_citations。
     Returns JSON with title/markdown/length."""
     from .crawl4ai_cli import scrape
     result = await scrape(
         url=url, max_words=max_words, retry=2, timeout=30, noise_filter=True,
+        respect_robots=respect_robots, output_format=format,
     )
     if not result.get("success"):
         return json.dumps({"error": result.get("error", "unknown")}, ensure_ascii=False)

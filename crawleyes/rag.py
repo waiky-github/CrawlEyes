@@ -25,12 +25,17 @@ async def markdown(
     retry: int = 2,
     timeout: int = 30,
     text_only: bool = False,
+    respect_robots: bool = False,
+    output_format: str = "markdown",
 ) -> dict[str, Any]:
     """Fetch a URL and return clean, sanitized Markdown (RAG-ready).
 
     Applies Crawl4AI extraction + content denoising + prompt-injection stripping.
-    Returns ``{"success": True, "title", "url", "length", "markdown"}`` on success,
-    or ``{"success": False, "error", "url"}`` on failure. Never raises.
+    ``respect_robots=True`` checks the target's robots.txt first (RFC 9309);
+    default off (see crawleyes/robots.py). ``output_format`` selects the markdown
+    variant: markdown(default) | fit | raw | markdown_with_citations. Returns
+    ``{"success": True, "title", "url", "length", "markdown"}`` on success, or
+    ``{"success": False, "error", "url"}`` on failure. Never raises.
     """
     from .crawl4ai_cli import scrape
 
@@ -41,6 +46,8 @@ async def markdown(
         text_only=text_only,
         noise_filter=noise_filter,
         retry=retry,
+        respect_robots=respect_robots,
+        output_format=output_format,
     )
     if not result.get("success"):
         return result

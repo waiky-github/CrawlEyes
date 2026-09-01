@@ -40,7 +40,25 @@ log = logging.getLogger("crawl4ai_cli")
 
 
 async def scrape(url, timeout=30, max_words=0, text_only=False, js_code=None,
-                 noise_filter=False, bm25_keywords=None, retry=2, session=None):
+                 noise_filter=False, bm25_keywords=None, retry=2, session=None,
+                 respect_robots=False, output_format="markdown"):
+    """抓取 URL → 干净 Markdown。
+
+    ``respect_robots=True`` 时先检查目标站 robots.txt（RFC 9309），被 Disallow
+    则拒绝抓取。默认关闭——合规是调用方的知情选择（见 robots.py 设计说明）。
+
+    ``output_format`` 控制返回的 markdown 变体:
+      - "markdown" (默认): 去噪后的完整 Markdown（fit_markdown，若有 filter）
+      - "fit": 精简核心段落（fit_markdown 强制）
+      - "raw": 原始 HTML→Markdown，不去噪（raw_markdown）
+      - "markdown_with_citations": fit 基础上每个段落加 [来源: URL] 内联引用
+    """
+    if respect_robots:
+        from .robots import check_robots
+        allowed, reason = await check_robots(url)
+        if not allowed:
+            return {"success": False, "error": f"robots.txt disallowed: {reason}", "url": url}
+
     from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig
     from crawl4ai.content_filter_strategy import BM25ContentFilter, PruningContentFilter
     from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
@@ -88,20 +106,51 @@ async def scrape(url, timeout=30, max_words=0, text_only=False, js_code=None,
             async with AsyncWebCrawler(config=browser_cfg) as crawler:
                 result = await crawler.arun(url=url, config=run_cfg)
                 if result.success:
-                    # 优先取过滤后的 fit_markdown（有 content_filter 时生成）
-                    # 新版 API: result.markdown.fit_markdown; 旧版: result.fit_markdown
+                    # 按 output_format 选取对应 markdown 变体
                     md = ""
                     markdown_obj = getattr(result, "markdown", None)
-                    if isinstance(markdown_obj, dict):
-                        md = markdown_obj.get("fit_markdown") or markdown_obj.get("markdown") or ""
-                    elif hasattr(markdown_obj, "fit_markdown"):
-                        md = markdown_obj.fit_markdown or ""
+                    def _get_attr(obj, name):
+                        """从 dict / 对象 / 直接属性 取字段。"""
+                        if isinstance(obj, dict):
+                            return obj.get(name) or ""
+                        return getattr(obj, name, "") or ""
+
+                    if output_format == "raw":
+                        # 未过滤的原始 markdown
+                        md = _get_attr(markdown_obj, "raw_markdown") or _get_attr(result, "raw_markdown")
+                    elif output_format in ("fit", "markdown", "markdown_with_citations"):
+                        # fit_markdown 优先（去噪后核心内容）
+                        md = _get_attr(markdown_obj, "fit_markdown") or _get_attr(result, "fit_markdown")
+                        if not md:
+                            md = _get_attr(markdown_obj, "markdown") or _get_attr(result, "markdown")
                     if not md:
-                        md = getattr(result, "fit_markdown", "") or ""
-                    if not md:
-                        md = getattr(result, "markdown", "") or ""
+                        md = _get_attr(result, "markdown") or ""
                         if not isinstance(md, str):
                             md = str(md)
+                    # markdown_with_citations: 每段末尾加来源引用
+                    if output_format == "markdown_with_citations" and md:
+                        import re as _re
+                        md = _re.sub(r"\n\n+", "\n\n", md).strip()
+                        # 在每段末尾追加 [来源: url]（跳过已有链接行和标题行）
+                        lines = md.split("\n")
+                        out, para = [], []
+                        def flush():
+                            if para:
+                                t = "\n".join(para).strip()
+                                if t:
+                                    out.append(t + f"\n\n<sub>来源: {url}</sub>")
+                                para.clear()
+                        for ln in lines:
+                            if ln.strip() == "":
+                                flush()
+                            elif ln.startswith(("#", ">", "-", "*", "|")) or "[" in ln and "](" in ln:
+                                # 标题/引用/列表/已有链接行保持原样
+                                flush()
+                                out.append(ln)
+                            else:
+                                para.append(ln)
+                        flush()
+                        md = "\n".join(out)
                     if text_only:
                         import re
                         md = re.sub(r'[#>*`_\-\[\]()!]', '', md)
@@ -144,11 +193,17 @@ def main():
     parser.add_argument("--bm25", action="append", default=None, metavar="KEYWORD", help="只保留与关键词相关的段落 (可多次)")
     parser.add_argument("--retry", type=int, default=2, help="失败重试次数 (默认2, 0=不重试)")
     parser.add_argument("--session", help="复用浏览器 session (同一进程内多次抓取)")
+    parser.add_argument("--respect-robots", action="store_true",
+                        help="抓取前检查目标站 robots.txt (RFC 9309), 被 Disallow 则拒绝")
+    parser.add_argument("--format", default="markdown",
+                        choices=["markdown", "fit", "raw", "markdown_with_citations"],
+                        help="输出格式: markdown(默认)/fit/raw/markdown_with_citations")
     args = parser.parse_args()
 
     result = asyncio.run(scrape(
         args.url, args.timeout, args.max_words, args.text, args.js,
         args.noise_filter, args.bm25, args.retry, args.session,
+        args.respect_robots, args.format,
     ))
 
     if args.output:
