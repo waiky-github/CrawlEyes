@@ -216,6 +216,14 @@ CrawlEyes is a general-purpose fetch toolkit for legitimate research and persona
 
 **Robots.txt is opt-in** (default off): pass `respect_robots=True` to `extract` / `markdown` (or `--respect-robots` on the CLI) to check each target's `robots.txt` (RFC 9309) and refuse URLs it explicitly disallows. It's default-off so legitimate scraping isn't silently blocked by aggressive or broken robots rules — compliance is the caller's informed choice per use case. Always review each site's terms of service before scraping at scale.
 
+## Related articles
+
+Articles about CrawlEyes (Chinese):
+
+- 掘金 (Juejin): [给 AI Agents 一双「眼睛」：CrawlEyes 开源了](https://juejin.cn/post/7680482947515170816)
+- 知乎 (Zhihu): [给 AI Agents 一双「眼睛」：CrawlEyes 开源了](https://zhuanlan.zhihu.com/p/2078441499403067935)
+- 微信公众号 (WeChat): [给 AI Agents 一双「眼睛」：CrawlEyes 开源了](https://mp.weixin.qq.com/s/QsvTPqKMwH71eMsn1URu-A)
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
